@@ -1,0 +1,41 @@
+name: Build Standoff2ESP
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install CMake
+      run: brew install cmake
+
+    - name: Build
+      run: |
+        SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+        mkdir -p build && cd build
+        cmake .. -G Xcode \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+        xcodebuild \
+          -project Standoff2ESP.xcodeproj \
+          -scheme Standoff2ESP \
+          -configuration Release \
+          -sdk iphoneos \
+          -arch arm64 \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: Standoff2ESP
+        path: build/Release-iphoneos/*.dylib
+        retention-days: 7
