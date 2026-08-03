@@ -10,7 +10,6 @@ set(SOURCES
     Core/ESP.cpp
     Core/SilentAim.cpp
     Core/AntiCheat.cpp
-    Core/Protection.cpp
     UI/Config.cpp
 )
 
