@@ -8,8 +8,10 @@
 #include "SilentAim.h"
 #include "Config.h"
 #include "AntiCheat.h"
-#include "Protection.h"
 
+// ============================================================
+//  👆 GESTURE MANAGER (для управления жестами)
+// ============================================================
 @interface GestureManager : NSObject
 + (instancetype)sharedInstance;
 @end
@@ -21,6 +23,8 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         instance = [[GestureManager alloc] init];
+        
+        // Перехватываем касания через UIApplication
         Class appClass = [UIApplication class];
         Method original = class_getInstanceMethod(appClass, @selector(sendEvent:));
         Method swizzled = class_getInstanceMethod(appClass, @selector(swizzled_sendEvent:));
@@ -32,10 +36,15 @@
 - (void)swizzled_sendEvent:(UIEvent *)event {
     if (event.type == UIEventTypeTouches) {
         NSSet* touches = [event allTouches];
+        
+        // 2 пальца → ESP
         if (touches.count == 2) {
             BOOL allBegan = YES;
             for (UITouch* touch in touches) {
-                if (touch.phase != UITouchPhaseBegan) { allBegan = NO; break; }
+                if (touch.phase != UITouchPhaseBegan) {
+                    allBegan = NO;
+                    break;
+                }
             }
             if (allBegan) {
                 dispatch_async(dispatch_get_main_queue(), ^{
@@ -43,10 +52,15 @@
                 });
             }
         }
+        
+        // 3 пальца → Silent Aim
         if (touches.count == 3) {
             BOOL allBegan = YES;
             for (UITouch* touch in touches) {
-                if (touch.phase != UITouchPhaseBegan) { allBegan = NO; break; }
+                if (touch.phase != UITouchPhaseBegan) {
+                    allBegan = NO;
+                    break;
+                }
             }
             if (allBegan) {
                 dispatch_async(dispatch_get_main_queue(), ^{
@@ -54,10 +68,15 @@
                 });
             }
         }
+        
+        // 4 пальца → No Recoil
         if (touches.count == 4) {
             BOOL allBegan = YES;
             for (UITouch* touch in touches) {
-                if (touch.phase != UITouchPhaseBegan) { allBegan = NO; break; }
+                if (touch.phase != UITouchPhaseBegan) {
+                    allBegan = NO;
+                    break;
+                }
             }
             if (allBegan) {
                 dispatch_async(dispatch_get_main_queue(), ^{
@@ -71,20 +90,32 @@
 
 @end
 
+// ============================================================
+//  🚀 ГЛАВНАЯ ФУНКЦИЯ
+// ============================================================
 Memory* g_memory = nullptr;
 
 __attribute__((constructor))
-void init_dylib() 
+void init_dylib() {
+    // Активируем жесты
     [GestureManager sharedInstance];
     
+    // Ждём 5 секунд, пока игра полностью загрузится
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        // Создаём объект для чтения памяти
         g_memory = new Memory();
+        
+        // Байпасс античита
         AntiCheat::init(g_memory);
         AntiCheat::bypass();
+        
+        // Инициализируем ESP и Silent Aim
         ESP::init(g_memory);
         SilentAim::init(g_memory);
     });
 }
 
 __attribute__((destructor))
-void cleanup_dylib() {}
+void cleanup_dylib() {
+    // Очистка при выгрузке
+}
