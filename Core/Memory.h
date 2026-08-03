@@ -27,14 +27,8 @@ public:
     T read(uintptr_t address) {
         T value = 0;
         vm_size_t size = sizeof(T);
-        vm_offset_t data;
-        mach_msg_type_number_t count = 0;
-        
-        kern_return_t kr = mach_vm_read(task, address, size, &data, &count);
-        if (kr == KERN_SUCCESS && count == size) {
-            memcpy(&value, (void*)data, size);
-            vm_deallocate(task, data, count);
-        }
+        vm_size_t count = size;
+        kern_return_t kr = vm_read_overwrite(task, address, size, (vm_address_t)&value, &count);
         return value;
     }
     
@@ -49,14 +43,8 @@ public:
     bool read_bool(uintptr_t address) { return read<bool>(address); }
     
     void read_string(uintptr_t address, char* buffer, size_t size) {
-        vm_offset_t data;
-        mach_msg_type_number_t count = 0;
-        
-        kern_return_t kr = mach_vm_read(task, address, size, &data, &count);
-        if (kr == KERN_SUCCESS && count == size) {
-            memcpy(buffer, (void*)data, size);
-            vm_deallocate(task, data, count);
-        }
+        vm_size_t outsize = size;
+        vm_read_overwrite(task, address, size, (vm_address_t)buffer, &outsize);
     }
     
     void write_float(uintptr_t address, float value) { write<float>(address, value); }
